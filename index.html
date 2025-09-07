@@ -11,8 +11,6 @@
     #error { color: red; margin-top: 20px; }
     button { padding: 10px 20px; font-size: 1.2em; margin-top: 20px; cursor: pointer; }
   </style>
-  <!-- ✅ Load Teachable Machine Audio library -->
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/audio@0.8/dist/teachablemachine-audio.min.js"></script>
 </head>
 <body>
   <h1>🐓 Rooster Crow Counter</h1>
@@ -20,38 +18,36 @@
   <p>Detected Class: <span id="label">None</span></p>
   <p>Confidence: <span id="confidence">0%</span></p>
   <p>Crow Count: <span id="count">0</span></p>
-  <button id="startBtn">🎙️ Start Listening</button>
+  <button id="startBtn">🎤 Start Listening</button>
   <p id="error"></p>
+
+  <!-- ✅ Load Teachable Machine Audio library (global tmAudio available) -->
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/audio/dist/teachablemachine-audio.min.js"></script>
 
   <script>
     const URL = "https://teachablemachine.withgoogle.com/models/PGfGCUsH1/";
-    const modelURL = URL + "model.json";
-    const metadataURL = URL + "metadata.json";
-
     let model, recognizer;
     let count = 0;
     let lastDetectedTime = 0;
 
     async function init() {
       try {
-        console.log("Requesting microphone access...");
+        document.getElementById("status").textContent = "Requesting microphone access...";
         await navigator.mediaDevices.getUserMedia({ audio: true });
-        document.getElementById("status").textContent = "Loading model...";
 
-        console.log("Loading model from:", modelURL);
-        model = await tmAudio.load(modelURL, metadataURL);
-        recognizer = new tmAudio.Recognizer(model);
+        model = await tmAudio.load(URL + "model.json", URL + "metadata.json");
+        recognizer = new tmAudio.AudioRecognizer(model);
         await recognizer.open();
 
         document.getElementById("status").textContent = "Model Loaded — Listening...";
-        console.log("Model loaded, now listening...");
 
         recognizer.listen((result) => {
-          const highest = result.scores.reduce((prev, score, idx) => {
-            return score > prev.score ? {score, idx} : prev;
-          }, {score: -Infinity, idx: -1});
+          const highest = result.scores.reduce((prev, score, idx) =>
+            score > prev.score ? {score, idx} : prev,
+          {score: -Infinity, idx: -1});
+
           const label = model.labels[highest.idx];
-          const confidence = Math.round(highest.score * 100);
+          const confidence = (highest.score * 100).toFixed(1);
 
           document.getElementById("label").textContent = label;
           document.getElementById("confidence").textContent = confidence + "%";
@@ -62,7 +58,6 @@
               count++;
               lastDetectedTime = now;
               document.getElementById("count").textContent = count;
-              console.log("Crow Count:", count);
             }
           }
         });
