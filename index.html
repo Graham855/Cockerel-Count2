@@ -22,9 +22,9 @@
   <button id="startBtn">🎙️ Start Listening</button>
   <p id="error"></p>
 
-  <script type="module">
-    import * as tmAudio from "https://cdn.jsdelivr.net/npm/@teachablemachine/audio/dist/audio.esm.js";
-
+  <!-- Load Teachable Machine audio from Google's official CDN -->
+  <script src="https://storage.googleapis.com/tm-model/teachablemachine-audio.min.js"></script>
+  <script>
     const URL = "https://teachablemachine.withgoogle.com/models/PGfGCUsH1/";
     const modelURL = URL + "model.json";
     const metadataURL = URL + "metadata.json";
