@@ -9,18 +9,21 @@
     p { font-size: 1.2em; }
     #count { font-size: 2em; color: darkgreen; }
     #error { color: red; margin-top: 20px; }
+    button { padding: 10px 20px; font-size: 1.2em; margin-top: 20px; cursor: pointer; }
   </style>
 </head>
 <body>
   <h1>?? Rooster Crow Counter</h1>
-  <p>Status: <span id="status">Loading model...</span></p>
+  <p>Status: <span id="status">Click Start to begin...</span></p>
   <p>Detected Class: <span id="label">None</span></p>
   <p>Crow Count: <span id="count">0</span></p>
+  <button id="startBtn">??? Start Listening</button>
   <p id="error"></p>
 
   <script type="module">
     import * as tmAudio from "https://cdn.jsdelivr.net/npm/@teachablemachine/audio@0.8/dist/audio.esm.js";
 
+  
     const URL = "https://teachablemachine.withgoogle.com/models/PGfGCUsH1/";
     const modelURL = URL + "model.json";
     const metadataURL = URL + "metadata.json";
@@ -31,7 +34,7 @@
 
     async function init() {
       try {
-        // Request microphone
+        // Request microphone after button click
         await navigator.mediaDevices.getUserMedia({ audio: true });
 
         document.getElementById("status").textContent = "Loading model...";
@@ -65,7 +68,8 @@
       }
     }
 
-    init();
+    // Attach button click event
+    document.getElementById("startBtn").addEventListener("click", init);
   </script>
 </body>
 </html>
