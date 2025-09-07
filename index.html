@@ -11,6 +11,20 @@
     #confidence { font-size: 1.2em; color: blue; }
     #error { color: red; margin-top: 20px; }
     button { padding: 10px 20px; font-size: 1.2em; margin-top: 20px; cursor: pointer; }
+
+    #debugPanel {
+      display: none;
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background: #f9f9f9;
+      text-align: left;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      font-size: 0.9em;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
@@ -21,6 +35,9 @@
   <p>Crow Count: <span id="count">0</span></p>
   <button id="startBtn">🎙️ Start Listening</button>
   <p id="error"></p>
+
+  <button id="toggleDebug">🔎 Show Debug Panel</button>
+  <div id="debugPanel"></div>
 
   <!-- Load Teachable Machine audio -->
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/audio"></script>
@@ -33,6 +50,7 @@
       let model, recognizer;
       let count = 0;
       let lastDetectedTime = 0;
+      let debugVisible = false;
 
       async function init() {
         try {
@@ -57,7 +75,6 @@
 
             document.getElementById("label").textContent = label;
             document.getElementById("confidence").textContent = confidence + "%";
-            console.log("Detected:", label, "Confidence:", confidence + "%", result.scores);
 
             if (label === "Cockerel") {
               const now = Date.now();
@@ -65,8 +82,16 @@
                 count++;
                 lastDetectedTime = now;
                 document.getElementById("count").textContent = count;
-                console.log("Crow Count:", count);
               }
+            }
+
+            // Update debug panel if visible
+            if (debugVisible) {
+              let debugText = "";
+              model.labels.forEach((lbl, i) => {
+                debugText += lbl + ": " + (result.scores[i] * 100).toFixed(1) + "%\n";
+              });
+              document.getElementById("debugPanel").textContent = debugText;
             }
           });
         } catch (err) {
@@ -77,6 +102,13 @@
       }
 
       document.getElementById("startBtn").addEventListener("click", init);
+
+      // Toggle debug panel
+      document.getElementById("toggleDebug").addEventListener("click", () => {
+        debugVisible = !debugVisible;
+        document.getElementById("debugPanel").style.display = debugVisible ? "block" : "none";
+        document.getElementById("toggleDebug").textContent = debugVisible ? "🔎 Hide Debug Panel" : "🔎 Show Debug Panel";
+      });
     };
   </script>
 </body>
