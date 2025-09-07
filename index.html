@@ -8,23 +8,9 @@
     h1 { font-size: 2.5em; }
     p { font-size: 1.2em; }
     #count { font-size: 2em; color: darkgreen; }
-    #confidence { font-size: 1.2em; color: blue; }
     #error { color: red; margin-top: 20px; }
     button { padding: 10px 20px; font-size: 1.2em; margin-top: 20px; cursor: pointer; }
-
-    #debugPanel {
-      display: none;
-      margin-top: 20px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      background: #f9f9f9;
-      text-align: left;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-      font-size: 0.9em;
-      white-space: pre-wrap;
-    }
+    #debugPanel { display: none; text-align: left; margin: 20px auto; width: 50%; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; }
   </style>
 </head>
 <body>
@@ -34,82 +20,78 @@
   <p>Confidence: <span id="confidence">0%</span></p>
   <p>Crow Count: <span id="count">0</span></p>
   <button id="startBtn">🎙️ Start Listening</button>
-  <p id="error"></p>
-
   <button id="toggleDebug">🔎 Show Debug Panel</button>
   <div id="debugPanel"></div>
+  <p id="error"></p>
 
-  <!-- Load Teachable Machine audio -->
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/audio"></script>
+  <!-- Load Teachable Machine audio library -->
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/audio@0.8/dist/audio.min.js"></script>
+
   <script>
-    window.onload = () => {
-      const URL = "https://teachablemachine.withgoogle.com/models/PGfGCUsH1/";
-      const modelURL = URL + "model.json";
-      const metadataURL = URL + "metadata.json";
+    const URL = "https://teachablemachine.withgoogle.com/models/PGfGCUsH1/";
+    const modelURL = URL + "model.json";
+    const metadataURL = URL + "metadata.json";
 
-      let model, recognizer;
-      let count = 0;
-      let lastDetectedTime = 0;
-      let debugVisible = false;
+    let model, recognizer;
+    let count = 0;
+    let lastDetectedTime = 0;
 
-      async function init() {
-        try {
-          console.log("Requesting microphone access...");
-          await navigator.mediaDevices.getUserMedia({ audio: true });
-          document.getElementById("status").textContent = "Loading model...";
+    async function init() {
+      try {
+        console.log("Requesting microphone access...");
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        document.getElementById("status").textContent = "Loading model...";
 
-          console.log("Loading model from:", modelURL);
-          model = await tmAudio.load(modelURL, metadataURL);
-          recognizer = new tmAudio.AudioRecognizer(model);
-          await recognizer.open();
+        console.log("Loading model from:", modelURL);
+        model = await tmAudio.load(modelURL, metadataURL);
+        recognizer = new tmAudio.AudioRecognizer(model);
+        await recognizer.open();
 
-          document.getElementById("status").textContent = "Model Loaded — Listening...";
-          console.log("Model loaded, now listening...");
+        document.getElementById("status").textContent = "Model Loaded — Listening...";
+        console.log("Model loaded, now listening...");
 
-          recognizer.listen((result) => {
-            const highest = result.scores.reduce((prev, score, idx) => {
-              return score > prev.score ? {score, idx} : prev;
-            }, {score: -Infinity, idx: -1});
-            const label = model.labels[highest.idx];
-            const confidence = (highest.score * 100).toFixed(1);
-
-            document.getElementById("label").textContent = label;
-            document.getElementById("confidence").textContent = confidence + "%";
-
-            if (label === "Cockerel") {
-              const now = Date.now();
-              if (now - lastDetectedTime > 2000) {
-                count++;
-                lastDetectedTime = now;
-                document.getElementById("count").textContent = count;
-              }
-            }
-
-            // Update debug panel if visible
-            if (debugVisible) {
-              let debugText = "";
-              model.labels.forEach((lbl, i) => {
-                debugText += lbl + ": " + (result.scores[i] * 100).toFixed(1) + "%\n";
-              });
-              document.getElementById("debugPanel").textContent = debugText;
-            }
+        recognizer.listen((result) => {
+          let highest = { score: -Infinity, idx: -1 };
+          result.scores.forEach((score, idx) => {
+            if (score > highest.score) highest = { score, idx };
           });
-        } catch (err) {
-          document.getElementById("status").textContent = "Error";
-          document.getElementById("error").textContent = err.message;
-          console.error("Crow Counter Error:", err);
-        }
+
+          const label = model.labels[highest.idx];
+          const confidence = (highest.score * 100).toFixed(1);
+
+          document.getElementById("label").textContent = label;
+          document.getElementById("confidence").textContent = confidence + "%";
+
+          // Update debug panel with all classes
+          let debugHTML = "<b>Live Confidence Scores:</b><br>";
+          model.labels.forEach((lbl, i) => {
+            debugHTML += `${lbl}: ${(result.scores[i] * 100).toFixed(1)}%<br>`;
+          });
+          document.getElementById("debugPanel").innerHTML = debugHTML;
+
+          if (label === "Cockerel") {
+            const now = Date.now();
+            if (now - lastDetectedTime > 2000) {
+              count++;
+              lastDetectedTime = now;
+              document.getElementById("count").textContent = count;
+              console.log("Crow Count:", count);
+            }
+          }
+        });
+      } catch (err) {
+        document.getElementById("status").textContent = "Error";
+        document.getElementById("error").textContent = err.message;
+        console.error("Crow Counter Error:", err);
       }
+    }
 
-      document.getElementById("startBtn").addEventListener("click", init);
-
-      // Toggle debug panel
-      document.getElementById("toggleDebug").addEventListener("click", () => {
-        debugVisible = !debugVisible;
-        document.getElementById("debugPanel").style.display = debugVisible ? "block" : "none";
-        document.getElementById("toggleDebug").textContent = debugVisible ? "🔎 Hide Debug Panel" : "🔎 Show Debug Panel";
-      });
-    };
+    // Attach button click event
+    document.getElementById("startBtn").addEventListener("click", init);
+    document.getElementById("toggleDebug").addEventListener("click", () => {
+      const panel = document.getElementById("debugPanel");
+      panel.style.display = panel.style.display === "none" ? "block" : "none";
+    });
   </script>
 </body>
 </html>
