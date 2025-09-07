@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>🐓 Rooster Crow Counter</title>
@@ -10,8 +10,22 @@
     #count { font-size: 2em; color: darkgreen; }
     #error { color: red; margin-top: 20px; }
     button { padding: 10px 20px; font-size: 1.2em; margin-top: 20px; cursor: pointer; }
-    #debugPanel { display: none; text-align: left; margin: 20px auto; width: 50%; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; }
+    #debugPanel {
+      display: none;
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: #f9f9f9;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: left;
+    }
+    #debugToggle { margin-top: 20px; }
   </style>
+  <!-- Correct Teachable Machine Audio library import -->
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/audio@0.8/dist/teachablemachine-audio.min.js"></script>
 </head>
 <body>
   <h1>🐓 Rooster Crow Counter</h1>
@@ -20,12 +34,10 @@
   <p>Confidence: <span id="confidence">0%</span></p>
   <p>Crow Count: <span id="count">0</span></p>
   <button id="startBtn">🎙️ Start Listening</button>
-  <button id="toggleDebug">🔎 Show Debug Panel</button>
-  <div id="debugPanel"></div>
   <p id="error"></p>
 
-  <!-- Load Teachable Machine audio library -->
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/audio@0.8/dist/audio.min.js"></script>
+  <button id="debugToggle">Show Debug Panel</button>
+  <div id="debugPanel"></div>
 
   <script>
     const URL = "https://teachablemachine.withgoogle.com/models/PGfGCUsH1/";
@@ -35,6 +47,7 @@
     let model, recognizer;
     let count = 0;
     let lastDetectedTime = 0;
+    const CONF_THRESHOLD = 0.8; // 80% confidence
 
     async function init() {
       try {
@@ -51,25 +64,23 @@
         console.log("Model loaded, now listening...");
 
         recognizer.listen((result) => {
-          let highest = { score: -Infinity, idx: -1 };
-          result.scores.forEach((score, idx) => {
-            if (score > highest.score) highest = { score, idx };
-          });
-
+          const highest = result.scores.reduce((prev, score, idx) => {
+            return score > prev.score ? {score, idx} : prev;
+          }, {score: -Infinity, idx: -1});
           const label = model.labels[highest.idx];
-          const confidence = (highest.score * 100).toFixed(1);
+          const confidence = highest.score;
 
           document.getElementById("label").textContent = label;
-          document.getElementById("confidence").textContent = confidence + "%";
+          document.getElementById("confidence").textContent = Math.round(confidence * 100) + "%";
 
-          // Update debug panel with all classes
-          let debugHTML = "<b>Live Confidence Scores:</b><br>";
+          // Update debug panel with all class confidences
+          let debugHTML = "<strong>Live Class Confidences:</strong><br/>";
           model.labels.forEach((lbl, i) => {
-            debugHTML += `${lbl}: ${(result.scores[i] * 100).toFixed(1)}%<br>`;
+            debugHTML += `${lbl}: ${(result.scores[i] * 100).toFixed(1)}%<br/>`;
           });
           document.getElementById("debugPanel").innerHTML = debugHTML;
 
-          if (label === "Cockerel") {
+          if (label === "Cockerel" && confidence >= CONF_THRESHOLD) {
             const now = Date.now();
             if (now - lastDetectedTime > 2000) {
               count++;
@@ -88,9 +99,17 @@
 
     // Attach button click event
     document.getElementById("startBtn").addEventListener("click", init);
-    document.getElementById("toggleDebug").addEventListener("click", () => {
+
+    // Toggle debug panel
+    document.getElementById("debugToggle").addEventListener("click", () => {
       const panel = document.getElementById("debugPanel");
-      panel.style.display = panel.style.display === "none" ? "block" : "none";
+      if (panel.style.display === "none") {
+        panel.style.display = "block";
+        document.getElementById("debugToggle").textContent = "Hide Debug Panel";
+      } else {
+        panel.style.display = "none";
+        document.getElementById("debugToggle").textContent = "Show Debug Panel";
+      }
     });
   </script>
 </body>
