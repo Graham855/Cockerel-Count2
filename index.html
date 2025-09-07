@@ -23,7 +23,7 @@
   <script type="module">
     import * as tmAudio from "https://cdn.jsdelivr.net/npm/@teachablemachine/audio@0.8/dist/audio.esm.js";
 
-  
+    // ? Your Teachable Machine model link
     const URL = "https://teachablemachine.withgoogle.com/models/PGfGCUsH1/";
     const modelURL = URL + "model.json";
     const metadataURL = URL + "metadata.json";
@@ -34,7 +34,7 @@
 
     async function init() {
       try {
-        // Request microphone after button click
+        // Request microphone when button clicked
         await navigator.mediaDevices.getUserMedia({ audio: true });
 
         document.getElementById("status").textContent = "Loading model...";
@@ -51,8 +51,12 @@
           }, {score: -Infinity, idx: -1});
           const label = model.labels[highest.idx];
 
+          // Show current detection
           document.getElementById("label").textContent = label;
-          if (label === "Rooster Crow") {
+          console.log("Detected:", label, result.scores);
+
+          // ? Match your model label ("Cockerel")
+          if (label === "Cockerel") {
             const now = Date.now();
             if (now - lastDetectedTime > 2000) {
               count++;
@@ -68,7 +72,7 @@
       }
     }
 
-    // Attach button click event
+    // Start button event
     document.getElementById("startBtn").addEventListener("click", init);
   </script>
 </body>
