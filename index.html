@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>🐓 Rooster Crow Counter</title>
+  <title>?? Rooster Crow Counter</title>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
     h1 { font-size: 2.5em; }
@@ -13,15 +13,16 @@
   </style>
 </head>
 <body>
-  <h1>🐓 Rooster Crow Counter</h1>
+  <h1>?? Rooster Crow Counter</h1>
   <p>Status: <span id="status">Click Start to begin...</span></p>
   <p>Detected Class: <span id="label">None</span></p>
   <p>Crow Count: <span id="count">0</span></p>
-  <button id="startBtn">🎙️ Start Listening</button>
+  <button id="startBtn">??? Start Listening</button>
   <p id="error"></p>
 
   <script type="module">
-    import * as tmAudio from "https://cdn.jsdelivr.net/npm/@teachablemachine/audio@latest/dist/audio.esm.js";
+    <!-- ? Correct import line -->
+    import * as tmAudio from "https://cdn.jsdelivr.net/npm/@teachablemachine/audio/dist/audio.esm.js";
 
     const URL = "https://teachablemachine.withgoogle.com/models/PGfGCUsH1/";
     const modelURL = URL + "model.json";
@@ -42,7 +43,7 @@
         recognizer = new tmAudio.AudioRecognizer(model);
         await recognizer.open();
 
-        document.getElementById("status").textContent = "Model Loaded — Listening...";
+        document.getElementById("status").textContent = "Model Loaded � Listening...";
         console.log("Model loaded, now listening...");
 
         recognizer.listen((result) => {
