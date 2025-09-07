@@ -8,24 +8,11 @@
     h1 { font-size: 2.5em; }
     p { font-size: 1.2em; }
     #count { font-size: 2em; color: darkgreen; }
+    #confidence { font-size: 1.2em; color: blue; }
     #error { color: red; margin-top: 20px; }
-    button { padding: 10px 20px; font-size: 1.2em; margin-top: 20px; cursor: pointer; }
-    #debugPanel {
-      display: none;
-      margin-top: 20px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      background: #f9f9f9;
-      max-width: 500px;
-      margin-left: auto;
-      margin-right: auto;
-      text-align: left;
-    }
-    #debugToggle { margin-top: 20px; }
+    button { padding: 10px 20px; font-size: 1.1em; margin-top: 20px; cursor: pointer; }
+    #debugPanel { display: none; margin-top: 20px; border: 1px solid #ccc; padding: 10px; max-height: 200px; overflow-y: auto; text-align: left; background: #f9f9f9; }
   </style>
-  <!-- Correct Teachable Machine Audio library import -->
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/audio@0.8/dist/teachablemachine-audio.min.js"></script>
 </head>
 <body>
   <h1>🐓 Rooster Crow Counter</h1>
@@ -33,11 +20,14 @@
   <p>Detected Class: <span id="label">None</span></p>
   <p>Confidence: <span id="confidence">0%</span></p>
   <p>Crow Count: <span id="count">0</span></p>
-  <button id="startBtn">🎙️ Start Listening</button>
+  <button id="startBtn">🎤 Start Listening</button>
   <p id="error"></p>
 
-  <button id="debugToggle">Show Debug Panel</button>
+  <button id="toggleDebug">Show Debug Panel</button>
   <div id="debugPanel"></div>
+
+  <!-- Load Teachable Machine Audio library -->
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/audio@0.8/dist/teachablemachine-audio.min.js"></script>
 
   <script>
     const URL = "https://teachablemachine.withgoogle.com/models/PGfGCUsH1/";
@@ -47,68 +37,67 @@
     let model, recognizer;
     let count = 0;
     let lastDetectedTime = 0;
-    const CONF_THRESHOLD = 0.8; // 80% confidence
 
     async function init() {
       try {
-        console.log("Requesting microphone access...");
+        document.getElementById("status").textContent = "Requesting microphone access...";
         await navigator.mediaDevices.getUserMedia({ audio: true });
-        document.getElementById("status").textContent = "Loading model...";
 
-        console.log("Loading model from:", modelURL);
+        document.getElementById("status").textContent = "Loading model...";
         model = await tmAudio.load(modelURL, metadataURL);
         recognizer = new tmAudio.AudioRecognizer(model);
         await recognizer.open();
 
         document.getElementById("status").textContent = "Model Loaded — Listening...";
-        console.log("Model loaded, now listening...");
 
         recognizer.listen((result) => {
           const highest = result.scores.reduce((prev, score, idx) => {
             return score > prev.score ? {score, idx} : prev;
           }, {score: -Infinity, idx: -1});
+
           const label = model.labels[highest.idx];
-          const confidence = highest.score;
+          const confidence = (highest.score * 100).toFixed(1);
 
           document.getElementById("label").textContent = label;
-          document.getElementById("confidence").textContent = Math.round(confidence * 100) + "%";
+          document.getElementById("confidence").textContent = confidence + "%";
 
-          // Update debug panel with all class confidences
-          let debugHTML = "<strong>Live Class Confidences:</strong><br/>";
-          model.labels.forEach((lbl, i) => {
-            debugHTML += `${lbl}: ${(result.scores[i] * 100).toFixed(1)}%<br/>`;
-          });
-          document.getElementById("debugPanel").innerHTML = debugHTML;
+          logDebug(`Detected: ${label} (${confidence}%)`);
 
-          if (label === "Cockerel" && confidence >= CONF_THRESHOLD) {
+          if (label === "Cockerel" && highest.score > 0.8) {
             const now = Date.now();
             if (now - lastDetectedTime > 2000) {
               count++;
               lastDetectedTime = now;
               document.getElementById("count").textContent = count;
-              console.log("Crow Count:", count);
+              logDebug("Crow counted! Total: " + count);
             }
           }
         });
       } catch (err) {
         document.getElementById("status").textContent = "Error";
         document.getElementById("error").textContent = err.message;
+        logDebug("Error: " + err.message);
         console.error("Crow Counter Error:", err);
       }
     }
 
-    // Attach button click event
-    document.getElementById("startBtn").addEventListener("click", init);
+    function logDebug(msg) {
+      const panel = document.getElementById("debugPanel");
+      const line = document.createElement("div");
+      line.textContent = new Date().toLocaleTimeString() + " - " + msg;
+      panel.appendChild(line);
+      panel.scrollTop = panel.scrollHeight;
+    }
 
-    // Toggle debug panel
-    document.getElementById("debugToggle").addEventListener("click", () => {
+    document.getElementById("startBtn").addEventListener("click", init);
+    document.getElementById("toggleDebug").addEventListener("click", () => {
       const panel = document.getElementById("debugPanel");
       if (panel.style.display === "none") {
         panel.style.display = "block";
-        document.getElementById("debugToggle").textContent = "Hide Debug Panel";
+        document.getElementById("toggleDebug").textContent = "Hide Debug Panel";
       } else {
         panel.style.display = "none";
-        document.getElementById("debugToggle").textContent = "Show Debug Panel";
+        document.getElementById("toggleDebug").textContent = "Show Debug Panel";
       }
     });
   </script>
