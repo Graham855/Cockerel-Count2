@@ -1,79 +1,53 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>?? Rooster Crow Counter</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-    h1 { font-size: 2.5em; }
-    p { font-size: 1.2em; }
-    #count { font-size: 2em; color: darkgreen; }
-    #error { color: red; margin-top: 20px; }
-    button { padding: 10px 20px; font-size: 1.2em; margin-top: 20px; cursor: pointer; }
-  </style>
-</head>
-<body>
-  <h1>?? Rooster Crow Counter</h1>
-  <p>Status: <span id="status">Click Start to begin...</span></p>
-  <p>Detected Class: <span id="label">None</span></p>
-  <p>Crow Count: <span id="count">0</span></p>
-  <button id="startBtn">??? Start Listening</button>
-  <p id="error"></p>
+<script type="module">
+  import * as tmAudio from "https://cdn.jsdelivr.net/npm/@teachablemachine/audio@latest/dist/audio.esm.js";
 
-  <script type="module">
-    import * as tmAudio from "https://cdn.jsdelivr.net/npm/@teachablemachine/audio/dist/audio.esm.js";
+  const URL = "https://teachablemachine.withgoogle.com/models/PGfGCUsH1/";
+  const modelURL = URL + "model.json";
+  const metadataURL = URL + "metadata.json";
 
-    // ? Your Teachable Machine model link
-    const URL = "https://teachablemachine.withgoogle.com/models/PGfGCUsH1/";
-    const modelURL = URL + "model.json";
-    const metadataURL = URL + "metadata.json";
+  let model, recognizer;
+  let count = 0;
+  let lastDetectedTime = 0;
 
-    let model, recognizer;
-    let count = 0;
-    let lastDetectedTime = 0;
+  async function init() {
+    try {
+      console.log("Requesting microphone access...");
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      document.getElementById("status").textContent = "Loading model...";
 
-    async function init() {
-      try {
-        // Request microphone when button clicked
-        await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("Loading model from:", modelURL);
+      model = await tmAudio.load(modelURL, metadataURL);
+      recognizer = new tmAudio.AudioRecognizer(model);
+      await recognizer.open();
 
-        document.getElementById("status").textContent = "Loading model...";
+      document.getElementById("status").textContent = "Model Loaded — Listening...";
+      console.log("Model loaded, now listening...");
 
-        model = await tmAudio.load(modelURL, metadataURL);
-        recognizer = new tmAudio.AudioRecognizer(model);
-        await recognizer.open();
+      recognizer.listen((result) => {
+        const highest = result.scores.reduce((prev, score, idx) => {
+          return score > prev.score ? {score, idx} : prev;
+        }, {score: -Infinity, idx: -1});
+        const label = model.labels[highest.idx];
 
-        document.getElementById("status").textContent = "Model Loaded — Listening...";
+        document.getElementById("label").textContent = label;
+        console.log("Detected:", label, result.scores);
 
-        recognizer.listen((result) => {
-          const highest = result.scores.reduce((prev, score, idx) => {
-            return score > prev.score ? {score, idx} : prev;
-          }, {score: -Infinity, idx: -1});
-          const label = model.labels[highest.idx];
-
-          // Show current detection
-          document.getElementById("label").textContent = label;
-          console.log("Detected:", label, result.scores);
-
-          // ? Match your model label ("Cockerel")
-          if (label === "Cockerel") {
-            const now = Date.now();
-            if (now - lastDetectedTime > 2000) {
-              count++;
-              lastDetectedTime = now;
-              document.getElementById("count").textContent = count;
-            }
+        if (label === "Cockerel") {
+          const now = Date.now();
+          if (now - lastDetectedTime > 2000) {
+            count++;
+            lastDetectedTime = now;
+            document.getElementById("count").textContent = count;
+            console.log("Crow Count:", count);
           }
-        });
-      } catch (err) {
-        document.getElementById("status").textContent = "Error";
-        document.getElementById("error").textContent = err.message;
-        console.error("Crow Counter Error:", err);
-      }
+        }
+      });
+    } catch (err) {
+      document.getElementById("status").textContent = "Error";
+      document.getElementById("error").textContent = err.message;
+      console.error("Crow Counter Error:", err);
     }
+  }
 
-    // Start button event
-    document.getElementById("startBtn").addEventListener("click", init);
-  </script>
-</body>
-</html>
+  document.getElementById("startBtn").addEventListener("click", init);
+</script>
