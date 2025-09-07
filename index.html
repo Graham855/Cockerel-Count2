@@ -40,8 +40,8 @@
         document.getElementById("status").textContent = "Loading model...";
 
         console.log("Loading model from:", modelURL);
-        model = await tmAudio.load(modelURL, metadataURL);
-        recognizer = new tmAudio.AudioRecognizer(model);
+        model = await window.tmAudio.load(modelURL, metadataURL);
+        recognizer = new window.tmAudio.AudioRecognizer(model);
         await recognizer.open();
 
         document.getElementById("status").textContent = "Model Loaded — Listening...";
